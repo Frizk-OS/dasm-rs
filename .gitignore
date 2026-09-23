@@ -23,3 +23,6 @@ build-clang/
 # Rust Cargo build directories
 **/target/
 target/
+
+# Reference / comparison trees (do not touch)
+cst-kitkat/
