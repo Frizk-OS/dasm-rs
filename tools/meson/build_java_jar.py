@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile Java source roots into a self-contained executable JAR."""
+"""Compile Java source roots into a self-contained executable or library JAR."""
 
 from __future__ import annotations
 
@@ -36,8 +36,10 @@ def find_java_tool(tool_name: str) -> str | None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--main-class', required=True)
-    parser.add_argument('--source-root', type=Path, action='append', required=True)
+    parser.add_argument('--main-class', required=False, default=None)
+    parser.add_argument('--source-root', type=Path, action='append', default=[])
+    parser.add_argument('--source-file', type=Path, action='append', default=[])
+    parser.add_argument('--resource-dir', type=Path, action='append', default=[])
     parser.add_argument('--dependency-jar', type=Path, action='append', default=[])
     args = parser.parse_args()
 
@@ -47,6 +49,7 @@ def main() -> int:
         raise SystemExit('javac and jar must be available in PATH or JAVA_HOME')
 
     sources = [str(path) for root in args.source_root for path in sorted(root.rglob('*.java'))]
+    sources.extend([str(path) for path in args.source_file if path.is_file()])
     if not sources:
         raise SystemExit('No Java sources found')
 
@@ -54,19 +57,28 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix='meson-java-') as temporary:
         classes = Path(temporary) / 'classes'
         classes.mkdir()
-        classpath = os.pathsep.join(str(path) for path in args.dependency_jar)
+        classpath = os.pathsep.join(str(path.resolve()) for path in args.dependency_jar)
         compile_command = [javac, '--release', '21', '-d', str(classes)]
         if classpath:
             compile_command.extend(['-cp', classpath])
         compile_command.extend(sources)
         subprocess.run(compile_command, check=True)
 
+        # Copy resources if provided
+        for res_dir in args.resource_dir:
+            if res_dir.is_dir():
+                shutil.copytree(res_dir, classes, dirs_exist_ok=True)
+
         for dependency in args.dependency_jar:
-            subprocess.run([jar, 'xf', str(dependency)], cwd=classes, check=True)
-        subprocess.run([
-            jar, '--create', '--file', str(args.output), '--main-class', args.main_class,
-            '-C', str(classes), '.',
-        ], check=True)
+            if dependency.is_file():
+                subprocess.run([jar, 'xf', str(dependency.resolve())], cwd=classes, check=True)
+
+        jar_command = [jar, '--create', '--file', str(args.output.resolve())]
+        if args.main_class:
+            jar_command.extend(['--main-class', args.main_class])
+        jar_command.extend(['-C', str(classes), '.'])
+        subprocess.run(jar_command, check=True)
+
     print(f'JAR: {args.output}')
     return 0
 

@@ -1,0 +1,21 @@
+cts_tradefed_jar = custom_target(
+  'cts-tradefed-jar',
+  output: 'cts-tradefed.jar',
+  input: ctsdeviceinfolib_jar,
+  command: [
+    python,
+    files('../meson/build_java_jar.py'),
+    '--output', '@OUTPUT@',
+    '--main-class', 'com.android.cts.tradefed.command.CtsConsole',
+    '--source-root', meson.current_source_dir() / 'src',
+    '--source-root', meson.project_source_root() / 'libs/commonutil/src',
+    '--resource-dir', meson.current_source_dir() / 'res',
+    '--dependency-jar', meson.project_source_root() / '../prebuilts/misc/common/tradefed/tradefed-prebuilt.jar',
+    '--dependency-jar', meson.project_source_root() / '../prebuilts/misc/common/ddmlib/ddmlib-prebuilt.jar',
+    '--dependency-jar', meson.project_source_root() / '../prebuilts/tools/common/guava-tools/guava-13.0.1.jar',
+    '--dependency-jar', meson.project_source_root() / 'tools/vm-tests-tf/lib/junit.jar',
+    '--dependency-jar', '@INPUT@',
+  ],
+  build_by_default: true,
+  install: false,
+)

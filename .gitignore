@@ -4,20 +4,10 @@
 .project
 .cproject
 .classpath
+.idea/
 
 # Meson build outputs
-build/meson-*
-build/*.ninja
-build/*.json
-build/.ninja*
-build/suite/
-build/tools/
-build/apps/
-build/tests/
-build/cts-*
-build/*.a
-build/*.so
-build/*.js
+build/
 build-clang/
 
 # Rust Cargo build directories

@@ -24,11 +24,27 @@ def main():
 
     # Known artifacts to copy into cts-testcases
     artifacts = [
-        # JAR tools
+        # JAR tools & libraries
         build_dir / "tools/cts-xml-generator/cts-xml-generator.jar",
         build_dir / "tools/cts-native-scanner/cts-native-scanner.jar",
         build_dir / "tools/cts-java-scanner/cts-java-scanner.jar",
         build_dir / "tools/cts-api-coverage/cts-api-coverage.jar",
+        build_dir / "tools/tradefed-host/cts-tradefed.jar",
+        build_dir / "tools/device-setup/ctsdeviceinfolib.jar",
+        build_dir / "tools/dex-tools/dex-tools.jar",
+        build_dir / "libs/jsonlib.jar",
+        build_dir / "libs/ctscommonutil.jar",
+        build_dir / "libs/vogarexpectlib.jar",
+        build_dir / "libs/ctsdeviceutil.jar",
+        build_dir / "libs/ctstestserver.jar",
+        build_dir / "libs/wrappedgtest.jar",
+        # Host side test JARs
+        build_dir / "hostsidetests/CtsUsbTests.jar",
+        build_dir / "hostsidetests/CtsMonkeyTestCases.jar",
+        build_dir / "hostsidetests/CtsAadbTestCases.jar",
+        build_dir / "hostsidetests/CtsSampleHostTestCases.jar",
+        build_dir / "hostsidetests/CtsAppSecurityTests.jar",
+        build_dir / "hostsidetests/CtsHoloTestCases.jar",
         # Binaries
         build_dir / "tools/dasm-rs/dasm-rs",
         build_dir / "apps/cts-usb-accessory/cts-usb-accessory",

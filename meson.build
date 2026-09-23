@@ -32,15 +32,16 @@ message('Selected C++ compiler: ' + cpp_comp.get_id() + ' (' + cpp_comp.version(
 
 python = import('python').find_installation(required: true)
 
-if get_option('audio_quality')
-  subdir('suite/audio_quality')
-endif
+subdir('libs')
 
 if get_option('tools')
   subdir('tools')
 endif
 
+subdir('suite')
 subdir('apps')
+subdir('hostsidetests')
+subdir('tests')
 
 run_target(
   'audio-quality-configure',
@@ -197,9 +198,4 @@ else
   message('Android APK/JNI targets are disabled; configure with -Dandroid_build=true to build the audio client APK.')
 endif
 
-if get_option('enable_rust_jni')
-  subdir('tests/jni')
-  subdir('tests/tests/jni')
-  subdir('suite/cts/deviceTests/dram/jni')
-  subdir('suite/cts/deviceTests/simplecpu/jni')
-endif
+
