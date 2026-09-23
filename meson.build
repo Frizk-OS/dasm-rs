@@ -16,7 +16,7 @@ project(
   'android-cts-modern',
   ['c', 'cpp'],
   version: '1.0.0',
-  meson_version: '>=1.3.0',
+  meson_version: '>=1.4.0',
   default_options: [
     'c_std=c23',
     'cpp_std=c++26',
@@ -34,6 +34,8 @@ endif
 if get_option('tools')
   subdir('tools')
 endif
+
+subdir('apps')
 
 run_target(
   'audio-quality-configure',
@@ -131,6 +133,7 @@ else
 endif
 
 if get_option('enable_rust_jni')
+  subdir('tests/jni')
   subdir('tests/tests/jni')
   subdir('suite/cts/deviceTests/dram/jni')
   subdir('suite/cts/deviceTests/simplecpu/jni')

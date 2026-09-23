@@ -1,0 +1,8 @@
+[package]
+name = "dasm-rs"
+version = "0.1.0"
+edition = "2024"
+authors = ["The AOSP and FrizkOS Authors"]
+description = "Modern Rust Dalvik assembler and validator for CTS Dalvik assembly files"
+
+[dependencies]

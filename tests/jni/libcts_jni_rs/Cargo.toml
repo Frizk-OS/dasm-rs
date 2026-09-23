@@ -1,0 +1,12 @@
+[package]
+name = "cts_jni"
+version = "0.1.0"
+edition = "2024"
+authors = ["The AOSP and FrizkOS Authors"]
+description = "Modern Rust implementation of CTS core native JNI methods (FileUtils, OSFeatures, CpuFeatures, NetlinkSocket)"
+
+[lib]
+name = "cts_jni"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]

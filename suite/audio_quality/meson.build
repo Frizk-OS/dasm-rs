@@ -1,17 +1,18 @@
-project(
-  'android-cts-audio-quality',
-  ['c', 'cpp'],
-  version: '1.0.0',
-  license: 'Apache-2.0',
-  meson_version: '>=1.3.0',
-  default_options: [
-    'c_std=c17',
-    'cpp_std=c++26',
-    'warning_level=2',
-    'buildtype=debugoptimized',
-    'b_ndebug=if-release',
-  ],
-)
+#
+# Copyright (C) 2012 The Android Open Source Project
+# Copyright (C) 2026 The AOSP and FrizkOS.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 cpp = meson.get_compiler('cpp')
 
@@ -21,11 +22,6 @@ common_includes = include_directories(
   'lib/src',
   'executable/src',
 )
-
-project_cpp_args = []
-# Modern host port uses standard C++ exceptions and std::thread. Keep the compiler
-# defaults unless a project-specific flag is required.
-add_project_arguments(project_cpp_args, language: 'cpp')
 
 lib_sources = run_command(
   'find',
@@ -44,7 +40,7 @@ lib_deps = [
   cpp.find_library('rt', required: false),
   cpp.find_library('m', required: false),
   dependency('tinyalsa', required: false),
-  dependency('tinyxml', required: true),
+  dependency('tinyxml', required: false),
 ]
 
 cts_audio_quality_lib = static_library(
@@ -64,7 +60,7 @@ executable(
   install: true,
 )
 
-if get_option('tests')
+if get_option('audio_quality_tests')
   test_sources = run_command(
     'find',
     meson.current_source_dir() / 'test',
