@@ -17,12 +17,13 @@ package com.android.cts.javascanner;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
- * Class that searches a source directory for native gTests and outputs a
+ * Searches a source directory for native gTests and outputs a
  * list of test classes and methods.
  */
-public class CtsJavaScanner {
+public final class CtsJavaScanner {
 
     private static void usage(String[] args) {
         System.err.println("Arguments: " + Arrays.asList(args));
@@ -35,13 +36,13 @@ public class CtsJavaScanner {
         File docletPath = null;
 
         for (int i = 0; i < args.length; i++) {
-            if ("-s".equals(args[i])) {
-                sourceDir = new File(getArg(args, ++i, "Missing value for source directory"));
-            } else if ("-d".equals(args[i])) {
-                docletPath = new File(getArg(args, ++i, "Missing value for docletPath"));
-            } else {
-                System.err.println("Unsupported flag: " + args[i]);
-                usage(args);
+            switch (args[i]) {
+                case "-s" -> sourceDir = new File(getArg(args, ++i, "Missing value for source directory"));
+                case "-d" -> docletPath = new File(getArg(args, ++i, "Missing value for docletPath"));
+                default -> {
+                    System.err.println("Unsupported flag: " + args[i]);
+                    usage(args);
+                }
             }
         }
 
@@ -55,7 +56,7 @@ public class CtsJavaScanner {
             usage(args);
         }
 
-        DocletRunner runner = new DocletRunner(sourceDir, docletPath);
+        var runner = new DocletRunner(Objects.requireNonNull(sourceDir), Objects.requireNonNull(docletPath));
         System.exit(runner.runJavaDoc());
     }
 

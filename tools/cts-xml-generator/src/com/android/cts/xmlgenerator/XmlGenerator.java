@@ -19,57 +19,29 @@ package com.android.cts.xmlgenerator;
 import vogar.Expectation;
 import vogar.ExpectationStore;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Generator of TestPackage XML files for native tests.
- *
- * It takes in an input of the following form:
- *
- * suite: x.y.z
- * case:TestClass1
- * test:testMethod1
- * test:testMethod2
- * case:TestClass2
- * test:testMethod1
- * suite: x.y
- * case:TestClass3
- * test:testMethod2
  */
-class XmlGenerator {
+final class XmlGenerator {
 
-    /** Example: com.android.cts.holo */
     private final String mAppNamespace;
-
-    /** Test package name like "android.nativemedia" to group the tests. */
     private final String mAppPackageName;
-
-    /** Name of the native executable. */
     private final String mName;
-
-    /** Test runner */
     private final String mRunner;
-
     private final String mTargetBinaryName;
-
     private final String mTargetNameSpace;
-
     private final String mJarPath;
-
     private final String mTestType;
-
-    /** Path to output file or null to just dump to standard out. */
     private final String mOutputPath;
-
-    /** ExpectationStore to filter out known failures. */
     private final ExpectationStore mExpectations;
 
     XmlGenerator(ExpectationStore expectations, String appNameSpace, String appPackageName,
@@ -88,21 +60,20 @@ class XmlGenerator {
     }
 
     public void writePackageXml() throws IOException {
-        OutputStream output = System.out;
         if (mOutputPath != null) {
-            File outputFile = new File(mOutputPath);
-            output = new FileOutputStream(outputFile);
-        }
-
-        PrintWriter writer = null;
-        try {
-            writer = new PrintWriter(output);
+            Path outPath = Path.of(mOutputPath);
+            if (outPath.getParent() != null) {
+                Files.createDirectories(outPath.getParent());
+            }
+            try (var writer = new PrintWriter(Files.newBufferedWriter(outPath, StandardCharsets.UTF_8))) {
+                writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+                writeTestPackage(writer);
+            }
+        } else {
+            var writer = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
             writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             writeTestPackage(writer);
-        } finally {
-            if (writer != null) {
-                writer.close();
-            }
+            writer.flush();
         }
     }
 
@@ -135,16 +106,16 @@ class XmlGenerator {
 
         writer.println(" version=\"1.0\">");
 
-        TestListParser parser = new TestListParser();
+        var parser = new TestListParser();
         Collection<TestSuite> suites = parser.parse(System.in);
-        StringBuilder nameCollector = new StringBuilder();
+        var nameCollector = new StringBuilder();
         writeTestSuites(writer, suites, nameCollector);
         writer.println("</TestPackage>");
     }
 
     private void writeTestSuites(PrintWriter writer, Collection<TestSuite> suites,
             StringBuilder nameCollector) {
-        Collection<TestSuite> sorted = sortCollection(suites);
+        List<TestSuite> sorted = suites.stream().sorted().toList();
         for (TestSuite suite : sorted) {
             writer.append("<TestSuite name=\"").append(suite.getName()).println("\">");
 
@@ -165,7 +136,7 @@ class XmlGenerator {
 
     private void writeTestCases(PrintWriter writer, Collection<TestCase> cases,
             StringBuilder nameCollector) {
-        Collection<TestCase> sorted = sortCollection(cases);
+        List<TestCase> sorted = cases.stream().sorted().toList();
         for (TestCase testCase : sorted) {
             String name = testCase.getName();
             writer.append("<TestCase name=\"").append(name).println("\">");
@@ -181,7 +152,7 @@ class XmlGenerator {
 
     private void writeTests(PrintWriter writer, Collection<Test> tests,
             StringBuilder nameCollector) {
-        Collection<Test> sorted = sortCollection(tests);
+        List<Test> sorted = tests.stream().sorted().toList();
         for (Test test : sorted) {
             nameCollector.append('#').append(test.getName());
             writer.append("<Test name=\"").append(test.getName()).append("\"");
@@ -189,19 +160,13 @@ class XmlGenerator {
                 writer.append(" expectation=\"failure\"");
             }
             if (test.getTimeout() >= 0) {
-                writer.append(" timeout=\"" + test.getTimeout() + "\"");
+                writer.append(" timeout=\"").append(String.valueOf(test.getTimeout())).append("\"");
             }
             writer.println(" />");
 
             nameCollector.delete(nameCollector.length() - test.getName().length() - 1,
                     nameCollector.length());
         }
-    }
-
-    private <E extends Comparable<E>> Collection<E> sortCollection(Collection<E> col) {
-        List<E> list = new ArrayList<E>(col);
-        Collections.sort(list);
-        return list;
     }
 
     public static boolean isKnownFailure(ExpectationStore expectationStore, String testName) {

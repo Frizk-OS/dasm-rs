@@ -16,25 +16,24 @@
 
 package com.android.cts.xmlgenerator;
 
-public class Test implements Comparable<Test> {
-    private String mName;
-    private int mTimeout;
+import java.util.Objects;
 
-    public Test(String name, int timeout) {
-        mName = name;
-        mTimeout = timeout;
+public record Test(String name, int timeout) implements Comparable<Test> {
+
+    public Test {
+        Objects.requireNonNull(name, "test name cannot be null");
     }
 
     public String getName() {
-        return mName;
+        return name;
     }
 
     public int getTimeout() {
-        return mTimeout;
+        return timeout;
     }
 
     @Override
     public int compareTo(Test another) {
-        return getName().compareTo(another.getName());
+        return name.compareTo(another.name());
     }
 }

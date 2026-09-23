@@ -20,22 +20,19 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /** Representation of a class in the API with constructors and methods. */
-class ApiClass implements Comparable<ApiClass>, HasCoverage {
+final class ApiClass implements Comparable<ApiClass>, HasCoverage {
 
     private final String mName;
-
     private final boolean mDeprecated;
-
     private final boolean mAbstract;
-
-    private final List<ApiConstructor> mApiConstructors = new ArrayList<ApiConstructor>();
-
-    private final List<ApiMethod> mApiMethods = new ArrayList<ApiMethod>();
+    private final List<ApiConstructor> mApiConstructors = new ArrayList<>();
+    private final List<ApiMethod> mApiMethods = new ArrayList<>();
 
     ApiClass(String name, boolean deprecated, boolean classAbstract) {
-        mName = name;
+        mName = Objects.requireNonNull(name);
         mDeprecated = deprecated;
         mAbstract = classAbstract;
     }
@@ -63,12 +60,10 @@ class ApiClass implements Comparable<ApiClass>, HasCoverage {
     }
 
     public ApiConstructor getConstructor(List<String> parameterTypes) {
-        for (ApiConstructor constructor : mApiConstructors) {
-            if (parameterTypes.equals(constructor.getParameterTypes())) {
-                return constructor;
-            }
-        }
-        return null;
+        return mApiConstructors.stream()
+                .filter(c -> parameterTypes.equals(c.getParameterTypes()))
+                .findFirst()
+                .orElse(null);
     }
 
     public Collection<ApiConstructor> getConstructors() {
@@ -80,14 +75,12 @@ class ApiClass implements Comparable<ApiClass>, HasCoverage {
     }
 
     public ApiMethod getMethod(String name, List<String> parameterTypes, String returnType) {
-        for (ApiMethod method : mApiMethods) {
-            if (name.equals(method.getName())
-                    && parameterTypes.equals(method.getParameterTypes())
-                    && returnType.equals(method.getReturnType())) {
-                return method;
-            }
-        }
-        return null;
+        return mApiMethods.stream()
+                .filter(m -> name.equals(m.getName())
+                        && parameterTypes.equals(m.getParameterTypes())
+                        && returnType.equals(m.getReturnType()))
+                .findFirst()
+                .orElse(null);
     }
 
     public Collection<ApiMethod> getMethods() {
@@ -95,18 +88,9 @@ class ApiClass implements Comparable<ApiClass>, HasCoverage {
     }
 
     public int getNumCoveredMethods() {
-        int numCovered = 0;
-        for (ApiConstructor constructor : mApiConstructors) {
-            if (constructor.isCovered()) {
-                numCovered++;
-            }
-        }
-        for (ApiMethod method : mApiMethods) {
-            if (method.isCovered()) {
-                numCovered++;
-            }
-        }
-        return numCovered;
+        long coveredCtors = mApiConstructors.stream().filter(ApiConstructor::isCovered).count();
+        long coveredMethods = mApiMethods.stream().filter(ApiMethod::isCovered).count();
+        return (int) (coveredCtors + coveredMethods);
     }
 
     public int getTotalMethods() {
@@ -115,10 +99,11 @@ class ApiClass implements Comparable<ApiClass>, HasCoverage {
 
     @Override
     public float getCoveragePercentage() {
-        if (getTotalMethods() == 0) {
-            return 100;
+        int total = getTotalMethods();
+        if (total == 0) {
+            return 100.0f;
         } else {
-            return (float) getNumCoveredMethods() / getTotalMethods() * 100;
+            return ((float) getNumCoveredMethods() / total) * 100.0f;
         }
     }
 }

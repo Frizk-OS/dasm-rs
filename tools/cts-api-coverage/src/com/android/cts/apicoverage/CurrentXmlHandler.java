@@ -26,26 +26,18 @@ import java.util.List;
 /**
  * {@link DefaultHandler} that builds an empty {@link ApiCoverage} object from scanning current.xml.
  */
-class CurrentXmlHandler extends DefaultHandler {
+final class CurrentXmlHandler extends DefaultHandler {
 
     private String mCurrentPackageName;
-
     private String mCurrentClassName;
-
     private boolean mIgnoreCurrentClass;
-
     private String mCurrentMethodName;
-
     private String mCurrentMethodReturnType;
-
     private boolean mCurrentMethodIsAbstract;
-
     private boolean mDeprecated;
 
-
-    private List<String> mCurrentParameterTypes = new ArrayList<String>();
-
-    private ApiCoverage mApiCoverage = new ApiCoverage();
+    private final List<String> mCurrentParameterTypes = new ArrayList<>();
+    private final ApiCoverage mApiCoverage = new ApiCoverage();
 
     public ApiCoverage getApi() {
         return mApiCoverage;
@@ -57,10 +49,8 @@ class CurrentXmlHandler extends DefaultHandler {
         super.startElement(uri, localName, name, attributes);
         if ("package".equalsIgnoreCase(localName)) {
             mCurrentPackageName = getValue(attributes, "name");
-
-            ApiPackage apiPackage = new ApiPackage(mCurrentPackageName);
+            var apiPackage = new ApiPackage(mCurrentPackageName);
             mApiCoverage.addPackage(apiPackage);
-
         } else if ("class".equalsIgnoreCase(localName)) {
             if (isEnum(attributes)) {
                 mIgnoreCurrentClass = true;
@@ -69,16 +59,17 @@ class CurrentXmlHandler extends DefaultHandler {
             mIgnoreCurrentClass = false;
             mCurrentClassName = getValue(attributes, "name");
             mDeprecated = isDeprecated(attributes);
-            ApiClass apiClass = new ApiClass(mCurrentClassName, mDeprecated, isAbstract(attributes));
+            var apiClass = new ApiClass(mCurrentClassName, mDeprecated, isAbstract(attributes));
             ApiPackage apiPackage = mApiCoverage.getPackage(mCurrentPackageName);
-            apiPackage.addClass(apiClass);
+            if (apiPackage != null) {
+                apiPackage.addClass(apiClass);
+            }
         } else if ("interface".equalsIgnoreCase(localName)) {
-            // don't add interface
             mIgnoreCurrentClass = true;
         } else if ("constructor".equalsIgnoreCase(localName)) {
             mDeprecated = isDeprecated(attributes);
             mCurrentParameterTypes.clear();
-        }  else if ("method".equalsIgnoreCase(localName)) {
+        } else if ("method".equalsIgnoreCase(localName)) {
             mDeprecated = isDeprecated(attributes);
             mCurrentMethodName = getValue(attributes, "name");
             mCurrentMethodReturnType = getValue(attributes, "return");
@@ -93,47 +84,51 @@ class CurrentXmlHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String name) throws SAXException {
         super.endElement(uri, localName, name);
         if (mIgnoreCurrentClass) {
-            // do not add anything for interface
             return;
         }
         if ("constructor".equalsIgnoreCase(localName)) {
             if (mCurrentParameterTypes.isEmpty()) {
-                // Don't add empty default constructors...
                 return;
             }
-            ApiConstructor apiConstructor = new ApiConstructor(mCurrentClassName,
+            var apiConstructor = new ApiConstructor(mCurrentClassName,
                     mCurrentParameterTypes, mDeprecated);
             ApiPackage apiPackage = mApiCoverage.getPackage(mCurrentPackageName);
-            ApiClass apiClass = apiPackage.getClass(mCurrentClassName);
-            apiClass.addConstructor(apiConstructor);
-        }  else if ("method".equalsIgnoreCase(localName)) {
-            if (mCurrentMethodIsAbstract) { // do not add abstract method
+            if (apiPackage != null) {
+                ApiClass apiClass = apiPackage.getClass(mCurrentClassName);
+                if (apiClass != null) {
+                    apiClass.addConstructor(apiConstructor);
+                }
+            }
+        } else if ("method".equalsIgnoreCase(localName)) {
+            if (mCurrentMethodIsAbstract) {
                 return;
             }
-            ApiMethod apiMethod = new ApiMethod(mCurrentMethodName, mCurrentParameterTypes,
+            var apiMethod = new ApiMethod(mCurrentMethodName, mCurrentParameterTypes,
                     mCurrentMethodReturnType, mDeprecated);
             ApiPackage apiPackage = mApiCoverage.getPackage(mCurrentPackageName);
-            ApiClass apiClass = apiPackage.getClass(mCurrentClassName);
-            apiClass.addMethod(apiMethod);
+            if (apiPackage != null) {
+                ApiClass apiClass = apiPackage.getClass(mCurrentClassName);
+                if (apiClass != null) {
+                    apiClass.addMethod(apiMethod);
+                }
+            }
         }
     }
 
-    static String getValue(Attributes attributes, String key) {
-        // Strip away generics <...> and make inner classes always use a "." rather than "$".
-        return attributes.getValue(key)
-                .replaceAll("<.+>", "")
-                .replace("$", ".");
+    private static String getValue(Attributes attributes, String name) {
+        int index = attributes.getIndex(name);
+        return index != -1 ? attributes.getValue(index) : "";
     }
 
-    private boolean isDeprecated(Attributes attributes) {
-        return "deprecated".equals(attributes.getValue("deprecated"));
+    private static boolean isDeprecated(Attributes attributes) {
+        return "deprecated".equals(getValue(attributes, "deprecated"));
     }
 
-    private boolean isAbstract(Attributes attributes) {
-        return "true".equals(attributes.getValue("abstract"));
+    private static boolean isAbstract(Attributes attributes) {
+        return Boolean.parseBoolean(getValue(attributes, "abstract"));
     }
 
-    private boolean isEnum(Attributes attributes) {
-        return "java.lang.Enum".equals(attributes.getValue("extends"));
+    private static boolean isEnum(Attributes attributes) {
+        return "java.lang.Enum".equals(getValue(attributes, "extends"));
     }
 }

@@ -16,27 +16,23 @@
 
 package com.android.cts.apicoverage;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /** Representation of a method in the API with parameters (arguments) and a return value. */
-class ApiMethod implements Comparable<ApiMethod> {
+final class ApiMethod implements Comparable<ApiMethod> {
 
     private final String mName;
-
     private final List<String> mParameterTypes;
-
     private final String mReturnType;
-
-    private boolean mDeprecated;
-
+    private final boolean mDeprecated;
     private boolean mIsCovered;
 
     ApiMethod(String name, List<String> parameterTypes, String returnType, boolean deprecated) {
-        mName = name;
-        mParameterTypes = new ArrayList<String>(parameterTypes);
-        mReturnType = returnType;
+        mName = Objects.requireNonNull(name);
+        mParameterTypes = List.copyOf(parameterTypes);
+        mReturnType = Objects.requireNonNull(returnType);
         mDeprecated = deprecated;
     }
 

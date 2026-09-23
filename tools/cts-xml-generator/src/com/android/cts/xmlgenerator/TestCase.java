@@ -19,15 +19,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-class TestCase implements Comparable<TestCase> {
+final class TestCase implements Comparable<TestCase> {
 
     private final String mName;
-
-    private final List<Test> mTests = new ArrayList<Test>();
+    private final List<Test> mTests = new ArrayList<>();
 
     public TestCase(String name) {
-        mName = name;
+        mName = Objects.requireNonNull(name, "case name cannot be null");
     }
 
     public String getName() {

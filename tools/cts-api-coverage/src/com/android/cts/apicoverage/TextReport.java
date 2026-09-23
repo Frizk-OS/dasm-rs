@@ -18,25 +18,24 @@ package com.android.cts.apicoverage;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
  * Class that outputs a text report of {@link ApiCoverage}.
  */
-class TextReport {
+final class TextReport {
 
     public static void printTextReport(ApiCoverage api, String packageFilter, OutputStream outputStream) {
-        PrintStream out = new PrintStream(outputStream);
+        var out = new PrintStream(outputStream, true, StandardCharsets.UTF_8);
+        var comparator = new CoverageComparator();
 
-        CoverageComparator comparator = new CoverageComparator();
-        List<ApiPackage> packages = new ArrayList<ApiPackage>(api.getPackages());
-        Collections.sort(packages, comparator);
+        List<ApiPackage> packages = api.getPackages().stream()
+                .sorted(comparator)
+                .toList();
 
         for (ApiPackage apiPackage : packages) {
-            if (apiPackage.getName().startsWith(packageFilter)
-                    && apiPackage.getTotalMethods() > 0) {
+            if (apiPackage.getName().startsWith(packageFilter) && apiPackage.getTotalMethods() > 0) {
                 printPackage(apiPackage, out);
             }
         }
@@ -48,21 +47,24 @@ class TextReport {
             if (apiPackage.getName().startsWith(packageFilter)) {
                 printPackage(apiPackage, out);
 
-                List<ApiClass> classes = new ArrayList<ApiClass>(apiPackage.getClasses());
-                Collections.sort(classes, comparator);
+                List<ApiClass> classes = apiPackage.getClasses().stream()
+                        .sorted(comparator)
+                        .toList();
+
                 for (ApiClass apiClass : classes) {
                     if (apiClass.getTotalMethods() > 0) {
                         printClass(apiClass, out);
 
-                        List<ApiConstructor> constructors =
-                                new ArrayList<ApiConstructor>(apiClass.getConstructors());
-                        Collections.sort(constructors);
+                        List<ApiConstructor> constructors = apiClass.getConstructors().stream()
+                                .sorted()
+                                .toList();
                         for (ApiConstructor constructor : constructors) {
                             printConstructor(constructor, out);
                         }
 
-                        List<ApiMethod> methods = new ArrayList<ApiMethod>(apiClass.getMethods());
-                        Collections.sort(methods);
+                        List<ApiMethod> methods = apiClass.getMethods().stream()
+                                .sorted()
+                                .toList();
                         for (ApiMethod method : methods) {
                             printMethod(method, out);
                         }
@@ -73,46 +75,35 @@ class TextReport {
     }
 
     private static void printPackage(ApiPackage apiPackage, PrintStream out) {
-        out.println(apiPackage.getName() + " "
-                + Math.round(apiPackage.getCoveragePercentage()) + "% ("
-                + apiPackage.getNumCoveredMethods() + "/" + apiPackage.getTotalMethods() + ")");
+        out.printf("%s %d%% (%d/%d)%n",
+                apiPackage.getName(),
+                Math.round(apiPackage.getCoveragePercentage()),
+                apiPackage.getNumCoveredMethods(),
+                apiPackage.getTotalMethods());
     }
 
     private static void printClass(ApiClass apiClass, PrintStream out) {
-        out.println("  " + apiClass.getName() + " "
-                + Math.round(apiClass.getCoveragePercentage()) + "% ("
-                + apiClass.getNumCoveredMethods() + "/" + apiClass.getTotalMethods() + ") ");
+        out.printf("  %s %d%% (%d/%d)%n",
+                apiClass.getName(),
+                Math.round(apiClass.getCoveragePercentage()),
+                apiClass.getNumCoveredMethods(),
+                apiClass.getTotalMethods());
     }
 
     private static void printConstructor(ApiConstructor constructor, PrintStream out) {
-        StringBuilder builder = new StringBuilder("    [")
-                .append(constructor.isCovered() ? "X" : " ")
-                .append("] ").append(constructor.getName()).append("(");
-
-        List<String> parameterTypes = constructor.getParameterTypes();
-        int numParameterTypes = parameterTypes.size();
-        for (int i = 0; i < numParameterTypes; i++) {
-            builder.append(parameterTypes.get(i));
-            if (i + 1 < numParameterTypes) {
-                builder.append(", ");
-            }
-        }
-        out.println(builder.append(")"));
+        String params = String.join(", ", constructor.getParameterTypes());
+        out.printf("    [%s] %s(%s)%n",
+                constructor.isCovered() ? "X" : " ",
+                constructor.getName(),
+                params);
     }
 
     private static void printMethod(ApiMethod method, PrintStream out) {
-        StringBuilder builder = new StringBuilder("    [")
-                .append(method.isCovered() ? "X" : " ")
-                .append("] ").append(method.getReturnType()).append(" ")
-                .append(method.getName()).append("(");
-        List<String> parameterTypes = method.getParameterTypes();
-        int numParameterTypes = parameterTypes.size();
-        for (int i = 0; i < numParameterTypes; i++) {
-            builder.append(parameterTypes.get(i));
-            if (i + 1 < numParameterTypes) {
-                builder.append(", ");
-            }
-        }
-        out.println(builder.append(")"));
+        String params = String.join(", ", method.getParameterTypes());
+        out.printf("    [%s] %s %s(%s)%n",
+                method.isCovered() ? "X" : " ",
+                method.getReturnType(),
+                method.getName(),
+                params);
     }
 }

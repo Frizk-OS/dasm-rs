@@ -18,9 +18,9 @@ package com.android.cts.nativescanner;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Read from the BufferedReader a list of test case names and test cases.
@@ -36,40 +36,39 @@ import java.util.List;
  *   test:TEST_NAME1
  *   test:TEST_NAME2
  */
-class TestScanner {
+final class TestScanner {
 
     private final String mTestSuite;
-
     private final BufferedReader mReader;
 
     TestScanner(BufferedReader reader, String testSuite) {
-        mTestSuite = testSuite;
-        mReader = reader;
+        mTestSuite = Objects.requireNonNull(testSuite);
+        mReader = Objects.requireNonNull(reader);
     }
 
     public List<String> getTestNames() throws IOException {
-        List<String> testNames = new ArrayList<String>();
-
+        var testNames = new ArrayList<String>();
         String testCaseName = null;
         String line;
+
         while ((line = mReader.readLine()) != null) {
-          if (line.length() > 0) {
-            if (line.charAt(0) == ' ') {
-              if (testCaseName != null) {
-                testNames.add("test:" + line.trim());
-              } else {
-                throw new IOException("TEST_CASE_NAME not defined before first test.");
-              }
-            } else {
-              testCaseName = line.trim();
-              if (testCaseName.endsWith(".")) {
-                testCaseName = testCaseName.substring(0, testCaseName.length()-1);
-              }
-              testNames.add("suite:" + mTestSuite);
-              testNames.add("case:" + testCaseName);
+            if (!line.isEmpty()) {
+                if (line.startsWith(" ")) {
+                    if (testCaseName != null) {
+                        testNames.add("test:" + line.strip());
+                    } else {
+                        throw new IOException("TEST_CASE_NAME not defined before first test.");
+                    }
+                } else {
+                    testCaseName = line.strip();
+                    if (testCaseName.endsWith(".")) {
+                        testCaseName = testCaseName.substring(0, testCaseName.length() - 1);
+                    }
+                    testNames.add("suite:" + mTestSuite);
+                    testNames.add("case:" + testCaseName);
+                }
             }
-          }
         }
-        return testNames;
+        return List.copyOf(testNames);
     }
 }

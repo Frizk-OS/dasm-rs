@@ -22,27 +22,28 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * {@link DefaultHander} that parses the output of dexdeps and adds the coverage information to
+ * {@link DefaultHandler} that parses the output of dexdeps and adds the coverage information to
  * an {@link ApiCoverage} object.
  */
-class DexDepsXmlHandler extends DefaultHandler {
+final class DexDepsXmlHandler extends DefaultHandler {
 
     private final ApiCoverage mPackageMap;
-
     private String mCurrentPackageName;
-
     private String mCurrentClassName;
-
     private String mCurrentMethodName;
-
     private String mCurrentMethodReturnType;
-
-    private List<String> mCurrentParameterTypes = new ArrayList<String>();
+    private final List<String> mCurrentParameterTypes = new ArrayList<>();
 
     DexDepsXmlHandler(ApiCoverage packageMap) {
-        this.mPackageMap = packageMap;
+        this.mPackageMap = Objects.requireNonNull(packageMap);
+    }
+
+    private static String getAttrValue(Attributes attributes, String name) {
+        int index = attributes.getIndex(name);
+        return index != -1 ? attributes.getValue(index) : "";
     }
 
     @Override
@@ -50,18 +51,18 @@ class DexDepsXmlHandler extends DefaultHandler {
             throws SAXException {
         super.startElement(uri, localName, name, attributes);
         if ("package".equalsIgnoreCase(localName)) {
-            mCurrentPackageName = CurrentXmlHandler.getValue(attributes, "name");
+            mCurrentPackageName = getAttrValue(attributes, "name");
         } else if ("class".equalsIgnoreCase(localName)
                 || "interface".equalsIgnoreCase(localName)) {
-            mCurrentClassName = CurrentXmlHandler.getValue(attributes, "name");
+            mCurrentClassName = getAttrValue(attributes, "name");
         } else if ("constructor".equalsIgnoreCase(localName)) {
             mCurrentParameterTypes.clear();
-        }  else if ("method".equalsIgnoreCase(localName)) {
-            mCurrentMethodName = CurrentXmlHandler.getValue(attributes, "name");
-            mCurrentMethodReturnType = CurrentXmlHandler.getValue(attributes, "return");
+        } else if ("method".equalsIgnoreCase(localName)) {
+            mCurrentMethodName = getAttrValue(attributes, "name");
+            mCurrentMethodReturnType = getAttrValue(attributes, "return");
             mCurrentParameterTypes.clear();
         } else if ("parameter".equalsIgnoreCase(localName)) {
-            mCurrentParameterTypes.add(CurrentXmlHandler.getValue(attributes, "type"));
+            mCurrentParameterTypes.add(getAttrValue(attributes, "type"));
         }
     }
 
@@ -79,7 +80,7 @@ class DexDepsXmlHandler extends DefaultHandler {
                     }
                 }
             }
-        }  else if ("method".equalsIgnoreCase(localName)) {
+        } else if ("method".equalsIgnoreCase(localName)) {
             ApiPackage apiPackage = mPackageMap.getPackage(mCurrentPackageName);
             if (apiPackage != null) {
                 ApiClass apiClass = apiPackage.getClass(mCurrentClassName);

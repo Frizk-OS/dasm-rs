@@ -21,17 +21,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-class TestSuite implements Comparable<TestSuite> {
+final class TestSuite implements Comparable<TestSuite> {
 
     private final String mName;
-
-    private final Map<String, TestSuite> mSuites = new HashMap<String, TestSuite>();
-
-    private final List<TestCase> mCases = new ArrayList<TestCase>();
+    private final Map<String, TestSuite> mSuites = new HashMap<>();
+    private final List<TestCase> mCases = new ArrayList<>();
 
     public TestSuite(String name) {
-        mName = name;
+        mName = Objects.requireNonNull(name, "suite name cannot be null");
     }
 
     public String getName() {

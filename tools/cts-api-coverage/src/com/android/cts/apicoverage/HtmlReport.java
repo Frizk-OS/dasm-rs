@@ -31,39 +31,36 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 /**
- * Class that outputs an HTML report of the {@link ApiCoverage} collected. It is the XML report
- * transformed into HTML.
+ * Outputs an HTML report of the {@link ApiCoverage} collected by transforming the XML report.
  */
-class HtmlReport {
+final class HtmlReport {
 
     public static void printHtmlReport(final List<File> testApks, final ApiCoverage apiCoverage,
             final String packageFilter, final String reportTitle, final OutputStream out)
                 throws IOException, TransformerException {
-        final PipedOutputStream xmlOut = new PipedOutputStream();
-        final PipedInputStream xmlIn = new PipedInputStream(xmlOut);
+        final var xmlOut = new PipedOutputStream();
+        final var xmlIn = new PipedInputStream(xmlOut);
 
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
+        Thread writerThread = new Thread(() -> {
+            try (xmlOut) {
                 XmlReport.printXmlReport(testApks, apiCoverage, packageFilter, reportTitle, xmlOut);
-
-                // Close the output stream to avoid "Write dead end" errors.
-                try {
-                    xmlOut.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            } catch (IOException e) {
+                System.err.println("Error streaming XML for HTML transformation: " + e.getMessage());
             }
         });
-        t.start();
+        writerThread.start();
 
-        InputStream xsl = CtsApiCoverage.class.getResourceAsStream("/api-coverage.xsl");
-        StreamSource xslSource = new StreamSource(xsl);
-        TransformerFactory factory = TransformerFactory.newInstance();
-        Transformer transformer = factory.newTransformer(xslSource);
+        try (InputStream xsl = CtsApiCoverage.class.getResourceAsStream("/api-coverage.xsl")) {
+            if (xsl == null) {
+                throw new IOException("Resource /api-coverage.xsl not found in classpath");
+            }
+            var xslSource = new StreamSource(xsl);
+            var factory = TransformerFactory.newInstance();
+            Transformer transformer = factory.newTransformer(xslSource);
 
-        StreamSource xmlSource = new StreamSource(xmlIn);
-        StreamResult result = new StreamResult(out);
-        transformer.transform(xmlSource, result);
+            var xmlSource = new StreamSource(xmlIn);
+            var result = new StreamResult(out);
+            transformer.transform(xmlSource, result);
+        }
     }
 }

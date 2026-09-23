@@ -19,19 +19,17 @@ package com.android.cts.apicoverage;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Objects;
 
 /** Representation of a package in the API containing classes. */
-class ApiPackage implements HasCoverage {
+final class ApiPackage implements HasCoverage {
 
     private final String mName;
-
-    private final Map<String, ApiClass> mApiClassMap = new HashMap<String, ApiClass>();
+    private final Map<String, ApiClass> mApiClassMap = new HashMap<>();
 
     ApiPackage(String name) {
-        mName = name;
+        mName = Objects.requireNonNull(name);
     }
 
     @Override
@@ -52,35 +50,24 @@ class ApiPackage implements HasCoverage {
     }
 
     public int getNumCoveredMethods() {
-        int covered = 0;
-        for (ApiClass apiClass : mApiClassMap.values()) {
-            covered += apiClass.getNumCoveredMethods();
-        }
-        return covered;
+        return mApiClassMap.values().stream()
+                .mapToInt(ApiClass::getNumCoveredMethods)
+                .sum();
     }
 
     public int getTotalMethods() {
-        int total = 0;
-        for (ApiClass apiClass : mApiClassMap.values()) {
-            total += apiClass.getTotalMethods();
-        }
-        return total;
+        return mApiClassMap.values().stream()
+                .mapToInt(ApiClass::getTotalMethods)
+                .sum();
     }
 
     @Override
     public float getCoveragePercentage() {
-        return (float) getNumCoveredMethods() / getTotalMethods() * 100;
+        int total = getTotalMethods();
+        return total == 0 ? 100.0f : ((float) getNumCoveredMethods() / total) * 100.0f;
     }
 
     public void removeEmptyAbstractClasses() {
-        Iterator<Entry<String, ApiClass>> it = mApiClassMap.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<String, ApiClass> entry = it.next();
-            ApiClass cls = entry.getValue();
-            if (cls.isAbstract() && (cls.getTotalMethods() == 0)) {
-                // this is essentially interface
-                it.remove();
-            }
-        }
+        mApiClassMap.values().removeIf(cls -> cls.isAbstract() && (cls.getTotalMethods() == 0));
     }
 }

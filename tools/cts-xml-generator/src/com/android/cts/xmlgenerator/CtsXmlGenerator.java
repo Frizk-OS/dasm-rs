@@ -30,13 +30,15 @@ import java.util.Set;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 /** Class that outputs a test package xml. */
-public class CtsXmlGenerator {
+public final class CtsXmlGenerator {
 
     private static void usage(String[] args) {
         System.err.println("Arguments: " + Arrays.asList(args));
-        System.err.println("Usage: cts-xml-generator -p PACKAGE_NAME -n NAME [-t TEST_TYPE]"
-                + " [-j JAR_PATH] [-i INSTRUMENTATION] [-m MANIFEST_FILE] [-e EXPECTATION_FILE]"
-                + " [-o OUTPUT_FILE]");
+        System.err.println("""
+            Usage: cts-xml-generator -p PACKAGE_NAME -n NAME [-t TEST_TYPE] \
+            [-j JAR_PATH] [-i INSTRUMENTATION] [-m MANIFEST_FILE] [-e EXPECTATION_FILE] \
+            [-o OUTPUT_FILE]
+            """);
         System.exit(1);
     }
 
@@ -44,7 +46,7 @@ public class CtsXmlGenerator {
         String appPackageName = null;
         String name = null;
         String outputPath = null;
-        Set<File> expectationFiles = new HashSet<File>();
+        Set<File> expectationFiles = new HashSet<>();
         File manifestFile = null;
         String instrumentation = null;
         String testType = null;
@@ -53,44 +55,32 @@ public class CtsXmlGenerator {
         String targetNameSpace = null;
 
         for (int i = 0; i < args.length; i++) {
-            if ("-p".equals(args[i])) {
-                appPackageName = getArg(args, ++i, "Missing value for test package");
-            } else if ("-n".equals(args[i])) {
-                name = getArg(args, ++i, "Missing value for executable name");
-            } else if ("-t".equals(args[i])) {
-                testType = getArg(args, ++i, "Missing value for test type");
-            } else if ("-j".equals(args[i])) {
-                jarPath = getArg(args, ++i, "Missing value for jar path");
-            } else if ("-m".equals(args[i])) {
-                manifestFile = new File(getArg(args, ++i, "Missing value for manifest"));
-            } else if ("-i".equals(args[i])) {
-                instrumentation = getArg(args, ++i, "Missing value for instrumentation");
-            } else if ("-e".equals(args[i])) {
-                expectationFiles.add(new File(getArg(args, ++i,
-                        "Missing value for expectation store")));
-            } else if ("-o".equals(args[i])) {
-                outputPath = getArg(args, ++i, "Missing value for output file");
-            } else if ("-a".equals(args[i])) {
-                appNameSpace =  getArg(args, ++i, "Missing value for app name space");
-            } else if ("-r".equals(args[i])) {
-                targetNameSpace =  getArg(args, ++i, "Missing value for target name space");
-            } else {
-                System.err.println("Unsupported flag: " + args[i]);
-                usage(args);
+            switch (args[i]) {
+                case "-p" -> appPackageName = getArg(args, ++i, "Missing value for test package");
+                case "-n" -> name = getArg(args, ++i, "Missing value for executable name");
+                case "-t" -> testType = getArg(args, ++i, "Missing value for test type");
+                case "-j" -> jarPath = getArg(args, ++i, "Missing value for jar path");
+                case "-m" -> manifestFile = new File(getArg(args, ++i, "Missing value for manifest"));
+                case "-i" -> instrumentation = getArg(args, ++i, "Missing value for instrumentation");
+                case "-e" -> expectationFiles.add(new File(getArg(args, ++i, "Missing value for expectation store")));
+                case "-o" -> outputPath = getArg(args, ++i, "Missing value for output file");
+                case "-a" -> appNameSpace = getArg(args, ++i, "Missing value for app name space");
+                case "-r" -> targetNameSpace = getArg(args, ++i, "Missing value for target name space");
+                default -> {
+                    System.err.println("Unsupported flag: " + args[i]);
+                    usage(args);
+                }
             }
         }
 
         String runner = null;
 
         if (manifestFile != null) {
-            Document manifest = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-                    .parse(manifestFile);
+            Document manifest = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(manifestFile);
             Element documentElement = manifest.getDocumentElement();
             appNameSpace = documentElement.getAttribute("package");
-            runner = getElementAttribute(documentElement, "instrumentation",
-                    "android:name");
-            targetNameSpace = getElementAttribute(documentElement, "instrumentation",
-                    "android:targetPackage");
+            runner = getElementAttribute(documentElement, "instrumentation", "android:name");
+            targetNameSpace = getElementAttribute(documentElement, "instrumentation", "android:targetPackage");
         }
 
         if (appPackageName == null) {
@@ -102,7 +92,7 @@ public class CtsXmlGenerator {
         }
 
         ExpectationStore store = ExpectationStore.parse(expectationFiles, ModeId.DEVICE);
-        XmlGenerator generator = new XmlGenerator(store, appNameSpace, appPackageName,
+        var generator = new XmlGenerator(store, appNameSpace, appPackageName,
                 name, runner, instrumentation, targetNameSpace, jarPath, testType, outputPath);
         generator.writePackageXml();
     }
@@ -119,10 +109,10 @@ public class CtsXmlGenerator {
 
     private static String getElementAttribute(Element parentElement, String elementName,
             String attributeName) {
-        NodeList nodeList = parentElement.getElementsByTagName(elementName);
-        if (nodeList.getLength() > 0) {
-             Element element = (Element) nodeList.item(0);
-             return element.getAttribute(attributeName);
+        NodeList elements = parentElement.getElementsByTagName(elementName);
+        if (elements.getLength() > 0) {
+            Element element = (Element) elements.item(0);
+            return element.getAttribute(attributeName);
         }
         return null;
     }

@@ -16,6 +16,7 @@
 package com.android.cts.xmlgenerator;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,17 +30,19 @@ import java.util.Scanner;
  * test:testHolo
  * test:testHoloDialog[:timeout_value]
  */
-class TestListParser {
+final class TestListParser {
 
     public Collection<TestSuite> parse(InputStream input) {
-        Map<String, TestSuite> suiteMap = new HashMap<String, TestSuite>();
+        Map<String, TestSuite> suiteMap = new HashMap<>();
         TestSuite currentSuite = null;
         TestCase currentCase = null;
-        Scanner scanner = null;
-        try {
-            scanner = new Scanner(input);
-            while(scanner.hasNextLine()) {
-                String line = scanner.nextLine();
+
+        try (var scanner = new Scanner(input, StandardCharsets.UTF_8)) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine().strip();
+                if (line.isEmpty()) {
+                    continue;
+                }
                 String[] tokens = line.split(":");
                 if (tokens.length < 2) {
                     continue;
@@ -47,21 +50,22 @@ class TestListParser {
 
                 String key = tokens[0];
                 String value = tokens[1];
-                if ("suite".equals(key)) {
-                    currentSuite = handleSuite(suiteMap, value);
-                } else if ("case".equals(key)) {
-                    currentCase = handleCase(currentSuite, value);
-                } else if ("test".equals(key)) {
-                    int timeout = -1;
-                    if (tokens.length == 3) {
-                        timeout = Integer.parseInt(tokens[2]);
+                switch (key) {
+                    case "suite" -> currentSuite = handleSuite(suiteMap, value);
+                    case "case" -> currentCase = handleCase(currentSuite, value);
+                    case "test" -> {
+                        int timeout = -1;
+                        if (tokens.length == 3) {
+                            try {
+                                timeout = Integer.parseInt(tokens[2]);
+                            } catch (NumberFormatException ignored) {
+                            }
+                        }
+                        handleTest(currentCase, value, timeout);
                     }
-                    handleTest(currentCase, value, timeout);
+                    default -> {
+                    }
                 }
-            }
-        } finally {
-            if (scanner != null) {
-                scanner.close();
             }
         }
         return suiteMap.values();
@@ -69,24 +73,19 @@ class TestListParser {
 
     private TestSuite handleSuite(Map<String, TestSuite> suiteMap, String fullSuite) {
         String[] suites = fullSuite.split("\\.");
-        int numSuites = suites.length;
         TestSuite lastSuite = null;
 
-        for (int i = 0; i < numSuites; i++) {
-            String name = suites[i];
+        for (String name : suites) {
             if (lastSuite != null) {
                 if (lastSuite.hasSuite(name)) {
                     lastSuite = lastSuite.getSuite(name);
                 } else {
-                    TestSuite newSuite = new TestSuite(name);
+                    var newSuite = new TestSuite(name);
                     lastSuite.addSuite(newSuite);
                     lastSuite = newSuite;
                 }
-            } else if (suiteMap.containsKey(name)) {
-                lastSuite = suiteMap.get(name);
             } else {
-                lastSuite = new TestSuite(name);
-                suiteMap.put(name, lastSuite);
+                lastSuite = suiteMap.computeIfAbsent(name, TestSuite::new);
             }
         }
 
@@ -94,12 +93,17 @@ class TestListParser {
     }
 
     private TestCase handleCase(TestSuite suite, String caseName) {
-        TestCase testCase = new TestCase(caseName);
+        if (suite == null) {
+            throw new IllegalStateException("Test case '" + caseName + "' declared without an active test suite");
+        }
+        var testCase = new TestCase(caseName);
         suite.addCase(testCase);
         return testCase;
     }
 
     private void handleTest(TestCase testCase, String test, int timeout) {
-        testCase.addTest(test, timeout);
+        if (testCase != null) {
+            testCase.addTest(test, timeout);
+        }
     }
 }

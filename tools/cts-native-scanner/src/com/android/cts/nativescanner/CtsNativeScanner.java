@@ -17,22 +17,25 @@ package com.android.cts.nativescanner;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Objects;
 
 /**
- * Class that searches a source directory for native gTests and outputs a
+ * Searches a source directory for native gTests and outputs a
  * list of test classes and methods.
  */
-public class CtsNativeScanner {
+public final class CtsNativeScanner {
 
     private static void usage(String[] args) {
         System.err.println("Arguments: " + Arrays.asList(args));
-        System.err.println("Usage: cts-native-scanner -t TEST_SUITE");
-        System.err.println("  This code reads from stdin the list of tests.");
-        System.err.println("  The format expected:");
-        System.err.println("    TEST_CASE_NAME.");
-        System.err.println("      TEST_NAME");
+        System.err.println("""
+            Usage: cts-native-scanner -t TEST_SUITE
+              This code reads from stdin the list of tests.
+              The format expected:
+                TEST_CASE_NAME.
+                  TEST_NAME
+            """);
         System.exit(1);
     }
 
@@ -52,10 +55,11 @@ public class CtsNativeScanner {
             usage(args);
         }
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        TestScanner scanner = new TestScanner(reader, testSuite);
-        for (String name : scanner.getTestNames()) {
-            System.out.println(name);
+        try (var reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8))) {
+            var scanner = new TestScanner(reader, Objects.requireNonNull(testSuite));
+            for (String name : scanner.getTestNames()) {
+                System.out.println(name);
+            }
         }
     }
 

@@ -16,13 +16,15 @@
 package com.android.cts.javascanner;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Stream;
 
-class DocletRunner {
+final class DocletRunner {
 
     private final File mSourceDir;
     private final File mDocletPath;
@@ -33,7 +35,7 @@ class DocletRunner {
     }
 
     int runJavaDoc() throws IOException, InterruptedException {
-        List<String> args = new ArrayList<String>();
+        var args = new ArrayList<String>();
         args.add("javadoc");
         args.add("-doclet");
         args.add("com.android.cts.javascannerdoclet.CtsJavaScannerDoclet");
@@ -45,16 +47,10 @@ class DocletRunner {
         args.add(getClassPath());
         args.addAll(getSourceFiles(mSourceDir));
 
-        Process process = new ProcessBuilder(args).start();
-        Scanner scanner = null;
-        try {
-            scanner = new Scanner(process.getInputStream());
+        var process = new ProcessBuilder(args).start();
+        try (var scanner = new Scanner(process.getInputStream())) {
             while (scanner.hasNextLine()) {
                 System.out.println(scanner.nextLine());
-            }
-        } finally {
-            if (scanner != null) {
-                scanner.close();
             }
         }
 
@@ -62,57 +58,36 @@ class DocletRunner {
     }
 
     private String getSourcePath(File sourceDir) {
-        List<String> sourcePath = new ArrayList<String>();
-        sourcePath.add("./frameworks/base/core/java");
-        sourcePath.add("./frameworks/base/test-runner/src");
-        sourcePath.add("./external/junit/src");
-        sourcePath.add("./development/tools/hosttestlib/src");
-        sourcePath.add("./libcore/dalvik/src/main/java");
-        sourcePath.add("./cts/tests/src");
-        sourcePath.add("./cts/libs/commonutil/src");
-        sourcePath.add("./cts/libs/deviceutil/src");
-        sourcePath.add("./frameworks/testing/uiautomator/library/testrunner-src");
-        sourcePath.add("./frameworks/testing/uiautomator_test_libraries/src");
-        sourcePath.add(sourceDir.toString());
-        return join(sourcePath, ":");
+        var basePaths = List.of(
+            "./frameworks/base/core/java",
+            "./frameworks/base/test-runner/src",
+            "./external/junit/src",
+            "./development/tools/hosttestlib/src",
+            "./libcore/dalvik/src/main/java",
+            "./cts/tests/src",
+            "./cts/libs/commonutil/src",
+            "./cts/libs/deviceutil/src",
+            "./frameworks/testing/uiautomator/library/testrunner-src",
+            "./frameworks/testing/uiautomator_test_libraries/src",
+            sourceDir.toString()
+        );
+        return String.join(":", basePaths);
     }
 
     private String getClassPath() {
-        List<String> classPath = new ArrayList<String>();
-        classPath.add("./prebuilts/misc/common/tradefed/tradefed-prebuilt.jar");
-        return join(classPath, ":");
+        return "./prebuilts/misc/common/tradefed/tradefed-prebuilt.jar";
     }
 
-    private List<String> getSourceFiles(File sourceDir) {
-        List<String> sourceFiles = new ArrayList<String>();
-
-        File[] files = sourceDir.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File pathname) {
-                return pathname.isDirectory() || pathname.toString().endsWith(".java");
-            }
-        });
-
-        for (File file : files) {
-            if (file.isDirectory()) {
-                sourceFiles.addAll(getSourceFiles(file));
-            } else {
-                sourceFiles.add(file.toString());
-            }
+    private List<String> getSourceFiles(File sourceDir) throws IOException {
+        if (!sourceDir.exists()) {
+            return List.of();
         }
-
-        return sourceFiles;
-    }
-
-    private String join(List<String> options, String delimiter) {
-        StringBuilder builder = new StringBuilder();
-        int numOptions = options.size();
-        for (int i = 0; i < numOptions; i++) {
-            builder.append(options.get(i));
-            if (i + 1 < numOptions) {
-                builder.append(delimiter);
-            }
+        try (Stream<Path> walk = Files.walk(sourceDir.toPath())) {
+            return walk
+                .filter(Files::isRegularFile)
+                .map(Path::toString)
+                .filter(s -> s.endsWith(".java"))
+                .toList();
         }
-        return builder.toString();
     }
 }

@@ -55,7 +55,7 @@ def main() -> int:
         classes = Path(temporary) / 'classes'
         classes.mkdir()
         classpath = os.pathsep.join(str(path) for path in args.dependency_jar)
-        compile_command = [javac, '--release', '17', '-d', str(classes)]
+        compile_command = [javac, '--release', '21', '-d', str(classes)]
         if classpath:
             compile_command.extend(['-cp', classpath])
         compile_command.extend(sources)

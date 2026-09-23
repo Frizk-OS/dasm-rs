@@ -16,30 +16,27 @@
 
 package com.android.cts.apicoverage;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /** Representation of a constructor in the API with parameters (arguments). */
-class ApiConstructor implements Comparable<ApiConstructor> {
+final class ApiConstructor implements Comparable<ApiConstructor> {
 
     private final String mName;
-
     private final List<String> mParameterTypes;
-
     private final boolean mDeprecated;
-
     private boolean mIsCovered;
 
     ApiConstructor(String name, List<String> parameterTypes, boolean deprecated) {
-        mName = name;
-        mParameterTypes = new ArrayList<String>(parameterTypes);
+        mName = Objects.requireNonNull(name);
+        mParameterTypes = List.copyOf(parameterTypes);
         mDeprecated = deprecated;
     }
 
     @Override
     public int compareTo(ApiConstructor another) {
-        return mParameterTypes.size() - another.mParameterTypes.size();
+        return Integer.compare(mParameterTypes.size(), another.mParameterTypes.size());
     }
 
     public String getName() {

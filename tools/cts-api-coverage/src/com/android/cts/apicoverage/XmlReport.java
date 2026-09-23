@@ -19,74 +19,69 @@ package com.android.cts.apicoverage;
 import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
+import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 /**
- * Class that outputs an XML report of the {@link ApiCoverage} collected. It can be viewed in
- * a browser when used with the api-coverage.css and api-coverage.xsl files.
+ * Class that outputs an XML report of the {@link ApiCoverage} collected.
  */
-class XmlReport {
+final class XmlReport {
+
+    private static final DateTimeFormatter DATE_FORMAT =
+            DateTimeFormatter.ofPattern("EEE, MMM d, yyyy h:mm a z", Locale.US);
 
     public static void printXmlReport(List<File> testApks, ApiCoverage apiCoverage,
             String packageFilter, String reportTitle, OutputStream outputStream) {
-        PrintStream out = new PrintStream(outputStream);
+        var out = new PrintStream(outputStream, true, StandardCharsets.UTF_8);
         out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         out.println("<?xml-stylesheet type=\"text/xsl\"  href=\"api-coverage.xsl\"?>");
 
-        SimpleDateFormat format = new SimpleDateFormat("EEE, MMM d, yyyy h:mm a z");
-        String date = format.format(new Date(System.currentTimeMillis()));
-        out.println("<api-coverage generatedTime=\"" + date + "\" title=\"" + reportTitle +"\">");
+        String date = DATE_FORMAT.format(ZonedDateTime.now());
+        out.printf("<api-coverage generatedTime=\"%s\" title=\"%s\">%n", date, reportTitle);
 
         out.println("<debug>");
         out.println("<sources>");
         for (File testApk : testApks) {
-            out.println("<apk path=\"" + testApk.getPath() + "\" />");
+            out.printf("<apk path=\"%s\" />%n", testApk.getPath());
         }
         out.println("</sources>");
         out.println("</debug>");
 
         out.println("<api>");
 
-        CoverageComparator comparator = new CoverageComparator();
-        List<ApiPackage> packages = new ArrayList<ApiPackage>(apiCoverage.getPackages());
-        Collections.sort(packages, comparator);
+        var comparator = new CoverageComparator();
+        List<ApiPackage> packages = apiCoverage.getPackages().stream()
+                .sorted(comparator)
+                .toList();
+
         int totalMethods = 0;
         int totalCoveredMethods = 0;
+
         for (ApiPackage pkg : packages) {
-            if (pkg.getName().startsWith(packageFilter)
-                   && pkg.getTotalMethods() > 0) {
+            if (pkg.getName().startsWith(packageFilter) && pkg.getTotalMethods() > 0) {
                 int pkgTotal = pkg.getTotalMethods();
                 totalMethods += pkgTotal;
                 int pkgTotalCovered = pkg.getNumCoveredMethods();
                 totalCoveredMethods += pkgTotalCovered;
-                out.println("<package name=\"" + pkg.getName()
-                        + "\" numCovered=\"" + pkgTotalCovered
-                        + "\" numTotal=\"" + pkgTotal
-                        + "\" coveragePercentage=\""
-                            + Math.round(pkg.getCoveragePercentage())
-                        + "\">");
+                out.printf("<package name=\"%s\" numCovered=\"%d\" numTotal=\"%d\" coveragePercentage=\"%d\">%n",
+                        pkg.getName(), pkgTotalCovered, pkgTotal, Math.round(pkg.getCoveragePercentage()));
 
-                List<ApiClass> classes = new ArrayList<ApiClass>(pkg.getClasses());
-                Collections.sort(classes, comparator);
+                List<ApiClass> classes = pkg.getClasses().stream()
+                        .sorted(comparator)
+                        .toList();
 
                 for (ApiClass apiClass : classes) {
                     if (apiClass.getTotalMethods() > 0) {
-                        out.println("<class name=\"" + apiClass.getName()
-                                + "\" numCovered=\"" + apiClass.getNumCoveredMethods()
-                                + "\" numTotal=\"" + apiClass.getTotalMethods()
-                                + "\" deprecated=\"" + apiClass.isDeprecated()
-                                + "\" coveragePercentage=\""
-                                    + Math.round(apiClass.getCoveragePercentage())
-                                + "\">");
+                        out.printf("<class name=\"%s\" numCovered=\"%d\" numTotal=\"%d\" deprecated=\"%b\" coveragePercentage=\"%d\">%n",
+                                apiClass.getName(), apiClass.getNumCoveredMethods(), apiClass.getTotalMethods(),
+                                apiClass.isDeprecated(), Math.round(apiClass.getCoveragePercentage()));
 
                         for (ApiConstructor constructor : apiClass.getConstructors()) {
-                            out.println("<constructor name=\"" + constructor.getName()
-                                    + "\" deprecated=\"" + constructor.isDeprecated()
-                                    + "\" covered=\"" + constructor.isCovered() + "\">");
+                            out.printf("<constructor name=\"%s\" deprecated=\"%b\" covered=\"%b\">%n",
+                                    constructor.getName(), constructor.isDeprecated(), constructor.isCovered());
                             if (constructor.isDeprecated()) {
                                 if (constructor.isCovered()) {
                                     totalCoveredMethods -= 1;
@@ -94,17 +89,14 @@ class XmlReport {
                                 totalMethods -= 1;
                             }
                             for (String parameterType : constructor.getParameterTypes()) {
-                                out.println("<parameter type=\"" + parameterType + "\" />");
+                                out.printf("<parameter type=\"%s\" />%n", parameterType);
                             }
-
                             out.println("</constructor>");
                         }
 
                         for (ApiMethod method : apiClass.getMethods()) {
-                            out.println("<method name=\"" + method.getName()
-                                    + "\" returnType=\"" + method.getReturnType()
-                                    + "\" deprecated=\"" + method.isDeprecated()
-                                    + "\" covered=\"" + method.isCovered() + "\">");
+                            out.printf("<method name=\"%s\" returnType=\"%s\" deprecated=\"%b\" covered=\"%b\">%n",
+                                    method.getName(), method.getReturnType(), method.isDeprecated(), method.isCovered());
                             if (method.isDeprecated()) {
                                 if (method.isCovered()) {
                                     totalCoveredMethods -= 1;
@@ -112,9 +104,8 @@ class XmlReport {
                                 totalMethods -= 1;
                             }
                             for (String parameterType : method.getParameterTypes()) {
-                                out.println("<parameter type=\"" + parameterType + "\" />");
+                                out.printf("<parameter type=\"%s\" />%n", parameterType);
                             }
-
                             out.println("</method>");
                         }
                         out.println("</class>");
@@ -125,10 +116,9 @@ class XmlReport {
         }
 
         out.println("</api>");
-        out.println("<total numCovered=\"" + totalCoveredMethods + "\" "
-                + "numTotal=\"" + totalMethods + "\" "
-                + "coveragePercentage=\""
-                + Math.round((float)totalCoveredMethods / totalMethods * 100.0f) + "\" />");
+        int overallPct = totalMethods == 0 ? 0 : Math.round((float) totalCoveredMethods / totalMethods * 100.0f);
+        out.printf("<total numCovered=\"%d\" numTotal=\"%d\" coveragePercentage=\"%d\" />%n",
+                totalCoveredMethods, totalMethods, overallPct);
         out.println("</api-coverage>");
     }
 }
