@@ -17,6 +17,8 @@ build/tests/
 build/cts-*
 build/*.a
 build/*.so
+build/*.js
+build-clang/
 
 # Rust Cargo build directories
 **/target/

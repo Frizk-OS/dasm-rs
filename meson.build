@@ -25,6 +25,11 @@ project(
   ],
 )
 
+c_comp = meson.get_compiler('c')
+cpp_comp = meson.get_compiler('cpp')
+message('Selected C compiler: ' + c_comp.get_id() + ' (' + c_comp.version() + ')')
+message('Selected C++ compiler: ' + cpp_comp.get_id() + ' (' + cpp_comp.version() + ')')
+
 python = import('python').find_installation(required: true)
 
 if get_option('audio_quality')
@@ -64,6 +69,66 @@ run_target(
     python,
     files('tools/meson/audit_android_mk.py'),
     meson.project_source_root(),
+  ],
+)
+
+# Ports of root makefiles: CtsCoverage.mk, CleanSpec.mk, CtsBuild.mk, CtsTestCaseList.mk
+run_target(
+  'cts-test-coverage',
+  command: [
+    python,
+    files('tools/meson/cts_coverage.py'),
+    '--mode', 'test',
+    '--jar', meson.project_build_root() / 'tools/cts-api-coverage/cts-api-coverage.jar',
+    '--output', meson.project_build_root() / 'cts-api-coverage/test-coverage.html',
+  ],
+)
+
+run_target(
+  'cts-verifier-coverage',
+  command: [
+    python,
+    files('tools/meson/cts_coverage.py'),
+    '--mode', 'verifier',
+    '--jar', meson.project_build_root() / 'tools/cts-api-coverage/cts-api-coverage.jar',
+    '--output', meson.project_build_root() / 'cts-api-coverage/verifier-coverage.html',
+  ],
+)
+
+run_target(
+  'cts-combined-coverage',
+  command: [
+    python,
+    files('tools/meson/cts_coverage.py'),
+    '--mode', 'combined',
+    '--jar', meson.project_build_root() / 'tools/cts-api-coverage/cts-api-coverage.jar',
+    '--output', meson.project_build_root() / 'cts-api-coverage/combined-coverage.html',
+  ],
+)
+
+run_target(
+  'cts-clean-intermediates',
+  command: [
+    python,
+    files('tools/meson/cts_clean.py'),
+  ],
+)
+
+run_target(
+  'cts-distribution',
+  command: [
+    python,
+    files('tools/meson/cts_build.py'),
+    '--build-dir', meson.project_build_root(),
+    '--out-dir', meson.project_build_root() / 'cts-testcases',
+  ],
+)
+
+run_target(
+  'cts-testcases-list',
+  command: [
+    python,
+    files('tools/meson/cts_test_case_list.py'),
   ],
 )
 

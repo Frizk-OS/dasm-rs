@@ -29,7 +29,7 @@ std::shared_ptr<Buffer> AudioSignalFactory::generateSineWave(AudioHardware::Byte
     // only 16bit signed
     ASSERT(BPS == AudioHardware::E2BPS);
     int16_t* data = reinterpret_cast<int16_t*>(buffer->getData());
-    double multiplier = 2.0 * M_PI * (double)signalFreq / samplingRate;
+    double multiplier = 2.0 * M_PI * (double)signalFreq / static_cast<double>(samplingRate);
     for (int i = 0; i < samples; i++) {
         double val = sin(multiplier * i) * maxPositive;
         *data = (int16_t)val;
@@ -52,7 +52,6 @@ std::shared_ptr<Buffer> AudioSignalFactory::generateWhiteNoise(AudioHardware::By
     srand(123456);
     int16_t* data = reinterpret_cast<int16_t*>(buffer->getData());
     int middle = RAND_MAX / 2;
-    double multiplier = (double)maxPositive / middle;
     for (int i = 0; i < samples; i++) {
         int val =  rand();
         val = (int16_t)((val - middle) * maxPositive / middle);
@@ -86,5 +85,3 @@ std::shared_ptr<Buffer> AudioSignalFactory::generateZeroSound(AudioHardware::Byt
     buffer->setSize(buffer->getCapacity());
     return buffer;
 }
-
-
