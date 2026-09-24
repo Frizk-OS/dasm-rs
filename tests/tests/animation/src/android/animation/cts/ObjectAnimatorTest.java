@@ -108,7 +108,7 @@ public class ObjectAnimatorTest extends
         String property = "backgroundColor";
         int startColor = mActivity.view.RED;
         int endColor = mActivity.view.BLUE;
-        Object[] values = {new Integer(startColor), new Integer(endColor)};
+        Object[] values = {Integer.valueOf(startColor), Integer.valueOf(endColor)};
         ArgbEvaluator evaluator = new ArgbEvaluator();
         ObjectAnimator colorAnimator = ObjectAnimator.ofObject(object, property,
                 evaluator, values);
@@ -151,7 +151,7 @@ public class ObjectAnimatorTest extends
         String propertyName = "backgroundColor";
         int startColor = mActivity.view.RED;
         int endColor = mActivity.view.BLUE;
-        Object[] values = {new Integer(startColor), new Integer(endColor)};
+        Object[] values = {Integer.valueOf(startColor), Integer.valueOf(endColor)};
         ArgbEvaluator evaluator = new ArgbEvaluator();
         ObjectAnimator colorAnimator = ObjectAnimator.ofObject(object, propertyName,
                 evaluator, values);
@@ -185,7 +185,7 @@ public class ObjectAnimatorTest extends
         String propertyName = "backgroundColor";
         int startColor = mActivity.view.RED;
         int endColor = mActivity.view.BLUE;
-        Object[] values = {new Integer(startColor), new Integer(endColor)};
+        Object[] values = {Integer.valueOf(startColor), Integer.valueOf(endColor)};
         ArgbEvaluator evaluator = new ArgbEvaluator();
         ObjectAnimator colorAnimator = ObjectAnimator.ofObject(object, propertyName,
                 evaluator, values);

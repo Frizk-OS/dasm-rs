@@ -67,12 +67,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Hashtable;
+import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -126,7 +127,7 @@ public class CtsTestServer {
     public static final String MESSAGE_403 = "403 forbidden";
     public static final String MESSAGE_404 = "404 not found";
 
-    private static Hashtable<Integer, String> sReasons;
+    private static Map<Integer, String> sReasons;
 
     private ServerThread mServerThread;
     private String mServerUri;
@@ -135,7 +136,7 @@ public class CtsTestServer {
     private Resources mResources;
     private boolean mSsl;
     private MimeTypeMap mMap;
-    private Vector<String> mQueries;
+    private List<String> mQueries;
     private ArrayList<HttpEntity> mRequestEntities;
     private final Map<String, HttpRequest> mLastRequestMap = new HashMap<String, HttpRequest>();
     private long mDocValidity;
@@ -152,11 +153,12 @@ public class CtsTestServer {
 
     public static String getReasonString(int status) {
         if (sReasons == null) {
-            sReasons = new Hashtable<Integer, String>();
-            sReasons.put(HttpStatus.SC_UNAUTHORIZED, "Unauthorized");
-            sReasons.put(HttpStatus.SC_NOT_FOUND, "Not Found");
-            sReasons.put(HttpStatus.SC_FORBIDDEN, "Forbidden");
-            sReasons.put(HttpStatus.SC_MOVED_TEMPORARILY, "Moved Temporarily");
+            sReasons = Map.of(
+                HttpStatus.SC_UNAUTHORIZED, "Unauthorized",
+                HttpStatus.SC_NOT_FOUND, "Not Found",
+                HttpStatus.SC_FORBIDDEN, "Forbidden",
+                HttpStatus.SC_MOVED_TEMPORARILY, "Moved Temporarily"
+            );
         }
         return sReasons.get(status);
     }
@@ -174,7 +176,7 @@ public class CtsTestServer {
         mSsl = ssl;
         mRequestEntities = new ArrayList<HttpEntity>();
         mMap = MimeTypeMap.getSingleton();
-        mQueries = new Vector<String>();
+        mQueries = new CopyOnWriteArrayList<>();
         mServerThread = new ServerThread(this, mSsl);
         if (mSsl) {
             mServerUri = "https://localhost:" + mServerThread.mSocket.getLocalPort();
@@ -727,12 +729,10 @@ public class CtsTestServer {
         // Fill in error reason. Avoid use of the ReasonPhraseCatalog, which is Locale-dependent.
         String reason = getReasonString(status);
         if (reason != null) {
-            StringBuffer buf = new StringBuffer("<html><head><title>");
-            buf.append(reason);
-            buf.append("</title></head><body>");
-            buf.append(reason);
-            buf.append("</body></html>");
-            response.setEntity(createEntity(buf.toString()));
+            String html = """
+                    <html><head><title>%s</title></head><body>%s</body></html>
+                    """.formatted(reason, reason);
+            response.setEntity(createEntity(html));
         }
         return response;
     }

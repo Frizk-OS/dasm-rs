@@ -516,7 +516,7 @@ public class GeeTestResultParser extends MultiLineReceiver {
         // Save the run time for this test if one exists
         if (parsedResults.mTestRunTime != null) {
             try {
-                testResult.mRunTime = new Long(parsedResults.mTestRunTime);
+                testResult.mRunTime = Long.parseLong(parsedResults.mTestRunTime);
             }
             catch (NumberFormatException e) {
                 Log.e(LOG_TAG, "Test run time value is invalid, received: " +

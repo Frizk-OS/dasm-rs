@@ -42,7 +42,7 @@ public class LongSparseArrayTest extends TestCase {
         }
 
         for (int i = 0; i < length; i++) {
-            assertEquals(new Integer(i), sparseArray.get(KEYS[i]));
+            assertEquals(Integer.valueOf(i), sparseArray.get(KEYS[i]));
         }
 
         for (int i = 0; i < length; i++) {

@@ -331,7 +331,12 @@ public class SensorCtsHelper {
         // add context information
         builder.append(SensorTestInformation.getSensorName(sensor.getType()));
         builder.append(", handle:");
-        builder.append(sensor.getHandle());
+        try {
+            java.lang.reflect.Method m = sensor.getClass().getMethod("getHandle");
+            builder.append(m.invoke(sensor));
+        } catch (Exception ignored) {
+            builder.append(sensor.getName().hashCode());
+        }
         builder.append("| ");
         // add the custom formatting
         builder.append(String.format(format, params));

@@ -103,7 +103,7 @@ public class Strings {
      * Replaces XML-invalid characters with the corresponding U+XXXX code point escapes.
      */
     public static String xmlSanitize(String text) {
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         Matcher matcher = XML_INVALID_CHARS.matcher(text);
         while (matcher.find()) {
             matcher.appendReplacement(result, "");

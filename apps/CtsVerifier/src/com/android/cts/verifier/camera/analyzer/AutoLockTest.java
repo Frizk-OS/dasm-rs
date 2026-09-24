@@ -292,9 +292,15 @@ public class AutoLockTest extends CameraTests {
         mActivity.unregisterReceiver(mUsbReceiver);
     }
 
-    protected void finalize ()  {
-        if (mUsingUsb) {
-            closeConnection();
+    @Override
+    @SuppressWarnings("removal")
+    protected void finalize() throws Throwable {
+        try {
+            if (mUsingUsb) {
+                closeConnection();
+            }
+        } finally {
+            super.finalize();
         }
     }
 

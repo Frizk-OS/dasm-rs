@@ -339,7 +339,7 @@ public class FeatureSummaryActivity extends PassFailButtons.ListActivity {
 
         // finally, check for our second-order error cases and set warning text
         // if necessary
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (hasIllegalFeature) {
             sb.append(getResources().getString(R.string.fs_disallowed)).append("\n");
         }

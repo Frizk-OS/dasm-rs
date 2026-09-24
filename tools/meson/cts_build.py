@@ -38,6 +38,9 @@ def main():
         build_dir / "libs/ctsdeviceutil.jar",
         build_dir / "libs/ctstestserver.jar",
         build_dir / "libs/wrappedgtest.jar",
+        # Android APK packages
+        build_dir / "apps/CtsVerifier/CtsVerifier.apk",
+        build_dir / "tools/device-setup/TestDeviceSetup.apk",
         # Host side test JARs
         build_dir / "hostsidetests/CtsUsbTests.jar",
         build_dir / "hostsidetests/CtsMonkeyTestCases.jar",

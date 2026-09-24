@@ -47,7 +47,7 @@ public class Utils {
     public static Number stringToNumber(String str)
             throws NumberFormatException {
         if (str.startsWith("+")) {
-            return new Integer(str.substring(1));
+            return Integer.valueOf(str.substring(1));
         }
         if (str.startsWith("0x")) {
             return (Utils.stringToSmallestInteger(str.substring(2), 16));
@@ -55,10 +55,10 @@ public class Utils {
 
             double x = Double.parseDouble(str);
             if (x <= (double) Float.MAX_VALUE && x >= (float) Float.MIN_VALUE) {
-                return new Float((float) x);
+                return Float.valueOf((float) x);
             }
 
-            return new Double(x);
+            return Double.valueOf(x);
         } else {
             return (Utils.stringToSmallestInteger(str, 10));
         }
@@ -71,9 +71,9 @@ public class Utils {
             throws NumberFormatException {
         long x = Long.parseLong(str, radix);
         if (x <= (long) Integer.MAX_VALUE && x >= (long) Integer.MIN_VALUE) {
-            return new Integer((int) x);
+            return Integer.valueOf((int) x);
         }
-        return new Long(x);
+        return Long.valueOf(x);
     }
 
     /**

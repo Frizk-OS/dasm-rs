@@ -27,7 +27,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +52,7 @@ public class TestPackageRepo implements ITestPackageRepo {
      */
     public TestPackageRepo(File testCaseDir, boolean includeKnownFailures) {
         mTestCaseDir = testCaseDir;
-        mTestMap = new Hashtable<String, TestPackageDef>();
+        mTestMap = new HashMap<>();
         mIncludeKnownFailures = includeKnownFailures;
         parse(mTestCaseDir);
     }

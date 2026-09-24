@@ -5,7 +5,7 @@ cargo = find_program('cargo', required: false)
 if cargo.found()
   verifier_jni_manifest = meson.current_source_dir() / 'verifier_rs' / 'Cargo.toml'
 
-  custom_target(
+  ctsverifier_jni_so = custom_target(
     'libctsverifier_jni',
     build_by_default: true,
     input: [

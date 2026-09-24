@@ -427,10 +427,6 @@ class TestPackageDef implements ITestPackageDef {
      * @return The hex encoded string.
      */
     private String toHexString(byte[] arr) {
-        StringBuffer buf = new StringBuffer(arr.length * 2);
-        for (byte b : arr) {
-            buf.append(String.format("%02x", b & 0xFF));
-        }
-        return buf.toString();
+        return java.util.HexFormat.of().formatHex(arr);
     }
 }

@@ -39,6 +39,7 @@ import java.io.File;
  * maintained so cts-tradefed can run against older CTS builds that still
  * require this class.
  */
+@Deprecated
 public class AccessibilityServiceTestRunner extends InstrumentationApkTest {
 
     private static final String DELEGATING_ACCESSIBLITY_SERVICE_PACKAGE_NAME =

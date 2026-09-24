@@ -112,7 +112,7 @@ public class TextToSpeechWrapper {
         public void onInit(int status) {
             mLock.lock();
             try {
-                mStatus = new Integer(status);
+                mStatus = Integer.valueOf(status);
                 mDone.signal();
             } finally {
                 mLock.unlock();

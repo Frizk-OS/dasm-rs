@@ -236,8 +236,8 @@ public class SharedPreferencesTest extends AndroidTestCase {
             prefs = mContext.getSharedPreferences("torture", Context.MODE_PRIVATE);
             assertEquals(expectedMap, prefs.getAll());
 
-            String key = new Integer(rand.nextInt(25)).toString();
-            String value = new Integer(i).toString();
+            String key = String.valueOf(rand.nextInt(25));
+            String value = String.valueOf(i);
             SharedPreferences.Editor editor = prefs.edit();
 
             if (rand.nextInt(100) < 85) {
@@ -277,8 +277,8 @@ public class SharedPreferencesTest extends AndroidTestCase {
             for (int applies = 0; applies < 3; applies++) {
                 SharedPreferences.Editor editor = prefs.edit();
                 for (int n = 0; n < 1000; n++) {
-                    String key = new Integer(rand.nextInt(25)).toString();
-                    String value = new Integer(n).toString();
+                    String key = String.valueOf(rand.nextInt(25));
+                    String value = String.valueOf(n);
                     editor.putString(key, value);
                     expectedMap.put(key, value);
                 }
