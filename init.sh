@@ -162,8 +162,8 @@ else
     warn "D8 Dex compiler could not be initialized."
 fi
 
-# 6. Check AAPT & Android SDK Prebuilts
-info "Checking Android packaging tools (AAPT & android.jar)..."
+# 6. Check AAPT, Zipalign & Android SDK Prebuilts
+info "Checking Android packaging tools (AAPT, Zipalign & android.jar)..."
 AAPT_PATH="$SCRIPT_DIR/../prebuilts/sdk/tools/linux/aapt"
 if command -v aapt &>/dev/null; then
     success "System AAPT found: $(aapt version)"
@@ -171,6 +171,15 @@ elif [ -x "$AAPT_PATH" ]; then
     success "Tree AAPT found: $("$AAPT_PATH" version)"
 else
     warn "AAPT not found in PATH or prebuilts. Building APKs will require AAPT installed."
+fi
+
+ZIPALIGN_PATH="$SCRIPT_DIR/../prebuilts/sdk/tools/linux/zipalign"
+if command -v zipalign &>/dev/null; then
+    success "System zipalign found"
+elif [ -x "$ZIPALIGN_PATH" ]; then
+    success "Tree zipalign found: $ZIPALIGN_PATH"
+else
+    warn "zipalign not found in PATH or prebuilts."
 fi
 
 ANDROID_JAR="$SCRIPT_DIR/../prebuilts/sdk/current/android.jar"

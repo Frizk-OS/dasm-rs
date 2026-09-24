@@ -2,7 +2,8 @@
 """
 Android APK Builder for Meson Build System.
 Compiles modern Java 17-21 sources, resources, and JNI native libraries into Android APKs.
-Uses AAPT, OpenJDK javac/jarsigner, and Android D8/R8 Dex compiler.
+Targeted specifically for Android 4.4.4 KitKat (API 19) platform runtime (FrizkOS).
+Uses AAPT, OpenJDK javac/jarsigner, Google D8/R8 Dex compiler, and zipalign.
 """
 
 from __future__ import annotations
@@ -56,8 +57,10 @@ def main() -> int:
     parser.add_argument("--dependency-jar", type=Path, action="append", default=[], help="Classpath dependency JAR")
     parser.add_argument("--jni-lib", type=Path, action="append", default=[], help="Shared .so library to include")
     parser.add_argument("--jni-abi", type=str, default="x86_64", help="ABI name for JNI libraries (default: x86_64)")
+    parser.add_argument("--min-api", type=int, default=19, help="Minimum Android API level (default: 19 for Android 4.4.4 KitKat)")
     parser.add_argument("--android-jar", type=Path, default=None, help="Path to android.jar prebuilt")
     parser.add_argument("--aapt", type=Path, default=None, help="Path to aapt tool")
+    parser.add_argument("--zipalign", type=Path, default=None, help="Path to zipalign tool")
     parser.add_argument("--d8-jar", type=Path, default=None, help="Path to d8/r8.jar")
 
     args = parser.parse_args()
@@ -79,7 +82,18 @@ def main() -> int:
         default_aapt = repo_root.parent / "prebuilts/sdk/tools/linux/aapt"
         aapt_bin = find_executable("aapt", default_aapt)
 
-    # 3. Resolve D8 Dex compiler JAR
+    # 3. Resolve Zipalign
+    zipalign_bin: Path | None = None
+    if args.zipalign and args.zipalign.is_file():
+        zipalign_bin = args.zipalign
+    else:
+        default_zipalign = repo_root.parent / "prebuilts/sdk/tools/linux/zipalign"
+        if default_zipalign.is_file() and os.access(default_zipalign, os.X_OK):
+            zipalign_bin = default_zipalign
+        elif shutil.which("zipalign"):
+            zipalign_bin = Path(shutil.which("zipalign"))
+
+    # 4. Resolve D8 Dex compiler JAR
     d8_jar = args.d8_jar
     if not d8_jar or not d8_jar.is_file():
         local_d8 = repo_root / "tools/bin/d8.jar"
@@ -91,7 +105,7 @@ def main() -> int:
             urllib.request.urlretrieve(url, local_d8)
         d8_jar = local_d8
 
-    # 4. Resolve Java tools
+    # 5. Resolve Java tools
     javac_bin = find_executable("javac")
     jarsigner_bin = find_executable("jarsigner")
 
@@ -167,7 +181,7 @@ def main() -> int:
             ]
             subprocess.run(fallback_javac, check=True)
 
-        # Step D: Convert compiled classes to classes.dex using D8
+        # Step D: Convert compiled classes to Dalvik classes.dex (version 035) using D8
         compiled_classes = list(classes_dir.rglob("*.class"))
         if not compiled_classes:
             raise RuntimeError("Compilation produced no .class files!")
@@ -181,6 +195,8 @@ def main() -> int:
             "java",
             "-cp", str(d8_jar),
             "com.android.tools.r8.D8",
+            "--min-api", str(args.min_api),
+            "--android-platform-build",
             "--output", str(dex_dir),
             "--lib", str(android_jar),
         ]
@@ -238,9 +254,16 @@ def main() -> int:
         ]
         subprocess.run(sign_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        # Step I: Move to final output
+        # Step I: 4-byte zip alignment (zipalign) for Android 4.4.4 memory mapping
+        final_apk = temp_apk
+        if zipalign_bin:
+            aligned_apk = tmp_dir / "aligned.apk"
+            subprocess.run([str(zipalign_bin), "-f", "4", str(temp_apk), str(aligned_apk)], check=True, stdout=subprocess.DEVNULL)
+            final_apk = aligned_apk
+
+        # Step J: Move to final output
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(temp_apk, args.output)
+        shutil.copy2(final_apk, args.output)
         print(f"APK: {args.output}")
 
     return 0
