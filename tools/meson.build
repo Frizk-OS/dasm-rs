@@ -1,8 +1,0 @@
-subdir('cts-xml-generator')
-subdir('cts-native-scanner')
-subdir('cts-java-scanner')
-subdir('cts-api-coverage')
-subdir('dasm-rs')
-subdir('device-setup')
-subdir('dex-tools')
-subdir('tradefed-host')
