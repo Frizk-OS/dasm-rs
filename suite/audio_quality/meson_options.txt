@@ -1,6 +1,0 @@
-option(
-  'tests',
-  type: 'boolean',
-  value: false,
-  description: 'Build the host-side CTS audio quality unit tests.',
-)
