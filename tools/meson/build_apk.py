@@ -3,7 +3,7 @@
 Android APK Builder for Meson Build System.
 Compiles modern Java 17-21 sources, resources, and JNI native libraries into Android APKs.
 Targeted specifically for Android 4.4.4 KitKat (API 19) platform runtime (FrizkOS).
-Uses AAPT, OpenJDK javac/jarsigner, Google D8/R8 Dex compiler, and zipalign.
+Uses AAPT, OpenJDK javac, Google D8/R8 Dex compiler, Android platform SignApk, and zipalign.
 """
 
 from __future__ import annotations
@@ -242,23 +242,42 @@ def main() -> int:
                     rel_path = f"lib/{args.jni_abi}/{jni.name}"
                     subprocess.run([str(aapt_bin), "add", "-k", str(temp_apk), rel_path], cwd=tmp_dir, check=True, stdout=subprocess.DEVNULL)
 
-        # Step H: Sign APK with debug key
-        debug_keystore = ensure_debug_keystore(repo_root / "tools/meson/debug.keystore")
-        sign_cmd = [
-            str(jarsigner_bin),
-            "-keystore", str(debug_keystore),
-            "-storepass", "android",
-            "-keypass", "android",
-            str(temp_apk),
-            "androiddebugkey",
-        ]
-        subprocess.run(sign_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Step H: Sign APK using platform SignApk tool or fallback to jarsigner
+        signapk_jar = repo_root.parent / "prebuilts/sdk/tools/lib/signapk.jar"
+        testkey_cert = repo_root.parent / "build/target/product/security/testkey.x509.pem"
+        testkey_key = repo_root.parent / "build/target/product/security/testkey.pk8"
+
+        signed_apk = tmp_dir / "signed.apk"
+        if signapk_jar.is_file() and testkey_cert.is_file() and testkey_key.is_file():
+            # Use official Android SignApk tool (100% compatible with Android 4.4.4 KitKat PackageParser)
+            sign_cmd = [
+                "java", "-jar", str(signapk_jar),
+                str(testkey_cert),
+                str(testkey_key),
+                str(temp_apk),
+                str(signed_apk),
+            ]
+            subprocess.run(sign_cmd, check=True, stdout=subprocess.DEVNULL)
+        else:
+            debug_keystore = ensure_debug_keystore(repo_root / "tools/meson/debug.keystore")
+            shutil.copy2(temp_apk, signed_apk)
+            sign_cmd = [
+                str(jarsigner_bin),
+                "-keystore", str(debug_keystore),
+                "-storepass", "android",
+                "-keypass", "android",
+                "-sigalg", "SHA256withRSA",
+                "-digestalg", "SHA-256",
+                str(signed_apk),
+                "androiddebugkey",
+            ]
+            subprocess.run(sign_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         # Step I: 4-byte zip alignment (zipalign) for Android 4.4.4 memory mapping
-        final_apk = temp_apk
+        final_apk = signed_apk
         if zipalign_bin:
             aligned_apk = tmp_dir / "aligned.apk"
-            subprocess.run([str(zipalign_bin), "-f", "4", str(temp_apk), str(aligned_apk)], check=True, stdout=subprocess.DEVNULL)
+            subprocess.run([str(zipalign_bin), "-f", "4", str(signed_apk), str(aligned_apk)], check=True, stdout=subprocess.DEVNULL)
             final_apk = aligned_apk
 
         # Step J: Move to final output
